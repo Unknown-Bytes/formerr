@@ -1,103 +1,79 @@
-import Image from "next/image";
+import { Feature } from "@/components/v1/components";
+import { Step } from "@/components/v1/components";
+import { FAQ } from "@/components/v1/components";
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+    <main className="bg-black text-white font-sans">
+      {/* Hero Section */}
+      <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-32">
+        <h1 className="text-5xl font-bold mb-6 max-w-3xl">
+          Crie formulários. Compartilhe com um link.
+        </h1>
+        <p className="text-lg text-gray-400 max-w-xl mb-8">
+          Uma nova forma de construir formulários online, com foco em simplicidade, performance e experiência.
+        </p>
+        <div className="flex gap-4">
+          <a href="/app" className="bg-white text-black px-6 py-3 rounded-md font-medium hover:bg-gray-100 transition">
+            Começar agora
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+          <a href="/demo" className="border border-white px-6 py-3 rounded-md font-medium hover:bg-white hover:text-black transition">
+            Ver exemplo
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* Features */}
+      <section className="px-6 py-20 bg-neutral-950 border-t border-neutral-800">
+        <div className="max-w-4xl mx-auto grid sm:grid-cols-2 gap-12 text-left">
+          <Feature title="🔗 Links públicos" description="Cada formulário tem sua URL única com UUID, pronta para ser compartilhada." />
+          <Feature title="🔒 Privacidade por padrão" description="Apenas o criador pode acessar as respostas. Visitantes só respondem." />
+          <Feature title="🧱 Interface modular" description="Adicione blocos de forma simples. Sem drag-and-drop barulhento." />
+          <Feature title="📊 Visualização em tempo real" description="Painel limpo para análise instantânea dos dados coletados." />
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="px-6 py-24 bg-black text-center border-t border-neutral-800">
+        <h2 className="text-3xl font-semibold mb-16">Como funciona</h2>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-10 text-left">
+          <Step number="1" title="Crie" description="Use blocos pré-definidos para montar seu formulário rapidamente." />
+          <Step number="2" title="Compartilhe" description="Gere um link único e envie para quem quiser responder." />
+          <Step number="3" title="Acompanhe" description="Visualize respostas no painel, exporte e monitore os dados." />
+        </div>
+      </section>
+
+      {/* Demo Screenshots */}
+      <section className="px-6 py-24 bg-neutral-950 border-t border-neutral-800 text-center">
+        <h2 className="text-3xl font-semibold mb-8">Simples por fora. Poderoso por dentro.</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl mx-auto">
+          Uma interface pensada para ser invisível. Seu foco continua no conteúdo. Veja como é fácil criar e gerenciar seus formulários com o Formerr.
+        </p>
+        <div className="bg-gray-800 rounded-lg w-full h-[400px] flex items-center justify-center text-gray-400">
+          {/* Substitua por um componente de carrossel ou imagem estática */}
+          Screenshot do formulário aqui
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="px-6 py-24 bg-black border-t border-neutral-800 max-w-3xl mx-auto">
+        <h2 className="text-3xl font-semibold mb-12 text-center">Dúvidas frequentes</h2>
+        <FAQ question="Preciso de conta para criar formulários?" answer="Sim, mas visitantes não precisam se registrar para responder." />
+        <FAQ question="Quantos formulários posso criar?" answer="Por enquanto, até 5 públicos e 10 privados por usuário." />
+        <FAQ question="Formerr é gratuito?" answer="Sim! Estamos em fase beta com recursos gratuitos para todos os usuários." />
+      </section>
+
+      {/* Footer */}
+      <footer className="text-center py-12 text-gray-500 text-sm bg-neutral-950 border-t border-neutral-800">
+        <p>© {new Date().getFullYear()} Formerr. Construído com simplicidade em mente.</p>
+        <div className="flex justify-center gap-4 mt-2 text-xs">
+          <a href="https://github.com/formerr" className="hover:underline">GitHub</a>
+          <a href="/roadmap" className="hover:underline">Roadmap</a>
+          <a href="/termos" className="hover:underline">Termos</a>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 }
+
+
