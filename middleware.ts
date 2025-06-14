@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+		const token = request.cookies.get("session")?.value;
+	if (request.nextUrl.pathname.startsWith("/v1")) {
+		if (!token) {
+			return NextResponse.redirect(new URL("/login", request.url));
+		}
+	}
 	if (request.method === "GET") {
 		const response = NextResponse.next();
 		const token = request.cookies.get("session")?.value ?? null;

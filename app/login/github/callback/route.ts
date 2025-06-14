@@ -45,7 +45,7 @@ export async function GET(request: Request): Promise<Response> {
 	const userResponse = await fetch(userRequest);
 	const userResult: unknown = await userResponse.json();
 	const userParser = new ObjectParser(userResult);
-
+	console.log(userParser)
 	const githubUserId = userParser.getNumber("id");
 	const username = userParser.getString("login");
 
@@ -57,7 +57,7 @@ export async function GET(request: Request): Promise<Response> {
 		return new Response(null, {
 			status: 302,
 			headers: {
-				Location: "/dashboard"
+				Location: "/v1/dashboard"
 			}
 		});
 	}
