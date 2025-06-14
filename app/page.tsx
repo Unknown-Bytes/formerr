@@ -1,16 +1,64 @@
-import { Feature } from "@/components/v1/components";
-import { Step } from "@/components/v1/components";
-import { FAQ } from "@/components/v1/components";
+'use client';
+
+import Image from 'next/image';
+
+function Feature({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-gray-400">{description}</p>
+    </div>
+  );
+}
+
+function Step({ number, title, description }: { number: string; title: string; description: string }) {
+  return (
+    <div>
+      <div className="text-4xl font-bold mb-2 text-white">{number}</div>
+      <h4 className="text-xl font-semibold mb-1">{title}</h4>
+      <p className="text-gray-400">{description}</p>
+    </div>
+  );
+}
+
+function FAQ({ question, answer }: { question: string; answer: string }) {
+  return (
+    <div className="mb-8">
+      <h4 className="text-lg font-medium">{question}</h4>
+      <p className="text-gray-400">{answer}</p>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <main className="bg-black text-white font-sans">
+    <main className="font-sans text-white bg-black min-h-screen">
+      
+      {/* Header com logo */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-3">
+            <Image src="/content/logo-f.svg" alt="Formerr logo" width={80} height={80} />
+            <span className="text-xl font-light tracking-wide text-white">Formerr</span>
+          </div>
+          <div>
+            <a
+              href="/login"
+              className="text-sm font-medium text-white border border-white px-4 py-2 rounded-md hover:bg-white hover:text-black transition"
+            >
+              Entrar
+            </a>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-32">
-        <h1 className="text-5xl font-bold mb-6 max-w-3xl">
+      <section className="flex flex-col items-center justify-center text-center px-6 py-32 bg-[radial-gradient(#666_1px,transparent_0)] [background-size:30px_30px]">
+        <Image src="/content/logo-f.svg" alt="Formerr F" width={128} height={128} className="mb-6 opacity-90" />
+        <h1 className="text-5xl font-semibold max-w-2xl mb-4">
           Crie formulários. Compartilhe com um link.
         </h1>
-        <p className="text-lg text-gray-400 max-w-xl mb-8">
+        <p className="text-lg text-gray-400 mb-8 max-w-xl">
           Uma nova forma de construir formulários online, com foco em simplicidade, performance e experiência.
         </p>
         <div className="flex gap-4">
@@ -21,6 +69,22 @@ export default function Home() {
             Ver exemplo
           </a>
         </div>
+      </section>
+
+      {/* Destaque com F vidro e gradiente */}
+      <section className="relative py-28 px-6 text-center text-black"
+        style={{ background: 'linear-gradient(to bottom, #eee, #b8b8b8)' }}>
+        <Image
+          src="/content/logo-f-glass.png"
+          alt="Logo vidro"
+          width={176}
+          height={176}
+          className="mx-auto mb-6 opacity-80"
+        />
+        <h2 className="text-3xl font-light mb-4">Criado para ser limpo. Mantido para ser sólido.</h2>
+        <p className="max-w-xl mx-auto text-gray-700">
+          O Formerr foca na experiência do usuário com uma interface discreta, acessível e poderosa.
+        </p>
       </section>
 
       {/* Features */}
@@ -49,9 +113,25 @@ export default function Home() {
         <p className="text-gray-400 mb-12 max-w-2xl mx-auto">
           Uma interface pensada para ser invisível. Seu foco continua no conteúdo. Veja como é fácil criar e gerenciar seus formulários com o Formerr.
         </p>
-        <div className="bg-gray-800 rounded-lg w-full h-[400px] flex items-center justify-center text-gray-400">
-          {/* Substitua por um componente de carrossel ou imagem estática */}
-          Screenshot do formulário aqui
+        <div className="relative w-full h-[400px] rounded-lg overflow-hidden bg-neutral-900 bg-[radial-gradient(#666_1px,transparent_0)] [background-size:30px_30px]">
+          <div className="absolute top-1/2 left-1/2 -translate-x-[60%] -translate-y-1/2 rotate-[-4deg] shadow-lg">
+            <Image
+              src="https://images.pexels.com/photos/29506607/pexels-photo-29506607/free-photo-of-modern-abstract-blue-and-green-geometric-art.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+              alt="Formulário exemplo 1"
+              width={500}
+              height={300}
+              className="rounded-lg"
+            />
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-[40%] -translate-y-1/2 rotate-[6deg] shadow-lg">
+            <Image
+              src="https://images.pexels.com/photos/31559522/pexels-photo-31559522/free-photo-of-canteiro-de-flores-rosa-e-branco-vibrante-em-flor.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+              alt="Formulário exemplo 2"
+              width={500}
+              height={300}
+              className="rounded-lg"
+            />
+          </div>
         </div>
       </section>
 
@@ -65,7 +145,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="text-center py-12 text-gray-500 text-sm bg-neutral-950 border-t border-neutral-800">
-        <p>© {new Date().getFullYear()} Formerr. Construído com simplicidade em mente.</p>
+        <p>© {new Date().getFullYear()} Formerr. Simples. Elegante. Aberto.</p>
         <div className="flex justify-center gap-4 mt-2 text-xs">
           <a href="https://github.com/formerr" className="hover:underline">GitHub</a>
           <a href="/roadmap" className="hover:underline">Roadmap</a>
@@ -75,5 +155,3 @@ export default function Home() {
     </main>
   );
 }
-
-
