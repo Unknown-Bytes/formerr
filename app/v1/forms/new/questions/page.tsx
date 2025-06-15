@@ -4,6 +4,34 @@ import { useNewForm } from "../formcontext";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from 'uuid';
+import { Plus, Trash2, Edit, X, GripVertical } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 // Custom QuestionView component to show question details
 const QuestionView = ({ question }: { question: Question }) => {
   return (
@@ -76,14 +104,88 @@ const QuestionView = ({ question }: { question: Question }) => {
     </div>
   );
 };
-import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, Edit, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
+// Sortable Question Item Component
+const SortableQuestionItem = ({ 
+  question, 
+  index, 
+  onEdit, 
+  onDelete 
+}: { 
+  question: Question;
+  index: number;
+  onEdit: (question: Question) => void;
+  onDelete: (index: number) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative group border rounded-lg p-4 bg-white transition-all ${
+        isDragging ? 'shadow-lg z-10' : 'hover:bg-gray-50'
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {/* Drag handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex-shrink-0 mt-1 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
+        
+        {/* Question content */}
+        <div className="flex-1 min-w-0">
+          <QuestionView question={question} />
+          <div className="mt-2 flex items-center text-xs text-gray-500">
+            <span className="capitalize">{question.type.replace(/-/g, ' ')}</span>
+            {question.required && (
+              <span className="ml-2 px-1.5 py-0.5 bg-red-50 text-red-600 rounded-full">
+                Obrigatória
+              </span>
+            )}
+          </div>
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onEdit(question)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => onDelete(index)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const QUESTION_TYPES = [
   { 
@@ -208,7 +310,7 @@ type Section = {
 	description: string;
 	order: number;
 	questions?: Question[];
-	formId?: string; // Adicionando formId para referência
+	formId?: string;
 	createdAt?: number;
 	updatedAt?: number;
 };
@@ -243,13 +345,13 @@ const defaultSection: Section = {
 	updatedAt: Date.now()
 };
 
-const createNewQuestion = (type: Question['type'] = 'short-text'): Question => ({
+const createNewQuestion = (type: Question['type'] = 'short-text', order: number = 0): Question => ({
   id: uuidv4(),
   title: `Nova pergunta`,
   description: "",
   type,
   required: false,
-  order: 0,
+  order,
   options: type === 'multiple-choice-single' || type === 'multiple-choice-multiple' || type === 'dropdown' || type === 'rating'
     ? [{ id: uuidv4(), label: 'Opção 1' }]
     : undefined
@@ -261,6 +363,55 @@ export default function Questions() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Set up sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end event
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setQuestions((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+        
+        // Use arrayMove to reorder the array
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        
+        // Update the order property for each question
+        return newItems.map((item, index) => ({
+          ...item,
+          order: index
+        }));
+      });
+    }
+  };
+
+  const handleAddQuestion = (type: Question['type']) => {
+    const newQuestion = createNewQuestion(type, questions.length);
+    setQuestions([...questions, newQuestion]);
+  };
+
+  const handleEditQuestion = (question: Question) => {
+    setEditingQuestion(question);
+    setIsEditing(true);
+  };
+
+  const handleDeleteQuestion = (index: number) => {
+    const updatedQuestions = questions.filter((_, i) => i !== index);
+    // Re-order remaining questions
+    const reorderedQuestions = updatedQuestions.map((question, i) => ({
+      ...question,
+      order: i
+    }));
+    setQuestions(reorderedQuestions);
+  };
 
 	return (
 		<div className="h-full flex flex-row justify-between gap-4">
@@ -320,42 +471,28 @@ export default function Questions() {
                           <p className="text-sm text-muted-foreground">Clique em um tipo de pergunta à direita para começar</p>
                         </div>
                       ) : (
-                        questions.map((question, index) => (
-                          <div key={question.id} className="relative group border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => {
-                                  setEditingQuestion(question);
-                                  setIsEditing(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  setQuestions(questions.filter((_, i) => i !== index));
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                        <DndContext 
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext 
+                            items={questions.map(q => q.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-2">
+                              {questions.map((question, index) => (
+                                <SortableQuestionItem
+                                  key={question.id}
+                                  question={question}
+                                  index={index}
+                                  onEdit={handleEditQuestion}
+                                  onDelete={handleDeleteQuestion}
+                                />
+                              ))}
                             </div>
-                            <QuestionView question={question} />
-                            <div className="mt-2 flex items-center text-xs text-gray-500">
-                              <span className="capitalize">{question.type.replace(/-/g, ' ')}</span>
-                              {question.required && (
-                                <span className="ml-2 px-1.5 py-0.5 bg-red-50 text-red-600 rounded-full">
-                                  Obrigatória
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))
+                          </SortableContext>
+                        </DndContext>
                       )}
                     </div>
                 </div>
@@ -505,10 +642,7 @@ export default function Questions() {
                     <div 
                       key={type.id}
                       className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => {
-                        const newQuestion = createNewQuestion(type.id as Question['type']);
-                        setQuestions([...questions, newQuestion]);
-                      }}
+                      onClick={() => handleAddQuestion(type.id as Question['type'])}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-lg flex-shrink-0">{type.icon}</span>
