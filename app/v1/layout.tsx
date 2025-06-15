@@ -17,21 +17,16 @@ export default async function DashboardLayout({ children }: PropsWithChildren<{}
   
   const image = `https://avatars.githubusercontent.com/u/${user.githubId}`;
 
+
+  /*
+    <div className="block left-0 right-0 z-50 md:hidden dark:bg-black/95 bg-gray-100/95 backdrop-blur-sm border-t dark:border-gray-800 h-fit">
+        <MobileNav image={image} />
+      </div>
+  */
   return (
     <div className="flex flex-col h-dvh w-full">
-      {/* Main content area with proper spacing for mobile nav */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar for Desktop and Tablet */}
-
-        {/* Main content area */}
-        <div className="flex-1 overflow-y-auto md:pb-0">
+      <div className="flex-1 overflow-y-auto md:pb-0">
           {children}
-        </div>
-      </div>
-
-      {/* Mobile Navigation */}
-      <div className="block left-0 right-0 z-50 md:hidden dark:bg-black/95 bg-gray-100/95 backdrop-blur-sm border-t dark:border-gray-800 h-fit">
-        <MobileNav image={image} />
       </div>
     </div>
   )

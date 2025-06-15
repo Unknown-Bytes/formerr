@@ -214,7 +214,7 @@ export default function Forms() {
       <div className="max-w-7xl mx-auto p-8">
         <div className="space-y-8">
           {/* Header Section */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
                 Meus Formulários
