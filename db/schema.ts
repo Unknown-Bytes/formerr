@@ -35,21 +35,6 @@ export const section = pgTable('section', {
   order: integer('order').notNull()
 });
 
-export const question = pgTable('question', {
-  id: uuid('id').defaultRandom().primaryKey(), 
-  sectionId: uuid('section_id').notNull().references(() => section.id),
-  label: text('label').notNull(), 
-  type: text('type').notNull(), 
-  required: integer('required').default(1),
-  order: integer('order').notNull()
-});
-
-export const option = pgTable('option', {
-  id: uuid('id').defaultRandom().primaryKey(), 
-  questionId: uuid('question_id').notNull().references(() => question.id),
-  label: text('label').notNull()
-});
-
 export const response = pgTable('response', {
   id: uuid('id').defaultRandom().primaryKey(), 
   formId: uuid('form_id').notNull().references(() => form.id),
@@ -69,4 +54,20 @@ export const session = pgTable('session', {
   id: uuid('id').defaultRandom().primaryKey(), // PK como UUID gerado automaticamente
   userId: uuid('user_id').notNull().references(() => user.id), // Foreign key para `user(id)`
   expiresAt: integer('expires_at').notNull(), // NOT NULL
+});
+
+export const question = pgTable('question', {
+  id: uuid('id').defaultRandom().primaryKey(), 
+  sectionId: uuid('section_id').notNull().references(() => section.id),
+  label: text('label').notNull(), 
+  type: text('type').notNull(), // short-text, paragraph, multiple-choice-single, multiple-choice-multiple, dropdown, date, time, datetime, rating
+  required: integer('required').default(1),
+  order: integer('order').notNull()
+});
+
+// A tabela "options" permanecerá como está:
+export const option = pgTable('option', {
+  id: uuid('id').defaultRandom().primaryKey(), 
+  questionId: uuid('question_id').notNull().references(() => question.id),
+  label: text('label').notNull()
 });
