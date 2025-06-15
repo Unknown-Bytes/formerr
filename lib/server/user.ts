@@ -7,16 +7,18 @@ export interface User {
   email: string;
   githubId: number;
   username: string;
+  name: string;
 }
 
-export async function createUser(githubId: number, email: string, username: string): Promise<User> {
+export async function createUser(githubId: number, email: string, username: string, name: string): Promise<User> {
   try {
     const [newUser] = await db
       .insert(userTable)
       .values({
         githubId,
         email,
-        username
+        username,
+        name
       })
       .returning();
 
@@ -28,7 +30,8 @@ export async function createUser(githubId: number, email: string, username: stri
       id: newUser.id,
       githubId: newUser.githubId,
       email: newUser.email,
-      username: newUser.username
+      username: newUser.username,
+      name: newUser.name
     };
   } catch (error) {
     console.error('Error creating user:', error);
@@ -52,7 +55,8 @@ export async function getUserFromGitHubId(githubId: number): Promise<User | null
       id: userData.id,
       githubId: userData.githubId,
       email: userData.email,
-      username: userData.username
+      username: userData.username,
+      name: userData.name
     };
   } catch (error) {
     console.error('Error getting user by GitHub ID:', error);
@@ -76,7 +80,8 @@ export async function getUserById(userId: string): Promise<User | null> {
       id: userData.id,
       githubId: userData.githubId,
       email: userData.email,
-      username: userData.username
+      username: userData.username,
+      name: userData.name
     };
   } catch (error) {
     console.error('Error getting user by ID:', error);

@@ -1,11 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
-import * as React from "react"
-import { Icons } from "@/components/ui/icons"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { useEffect, useRef } from 'react';
+import * as React from "react";
+import { Icons, Button } from "@/components/ui";
+import Link from "next/link";
 
 
 export default function Login() {

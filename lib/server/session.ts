@@ -52,7 +52,7 @@ export async function validateSessionId(id: string): Promise<SessionValidationRe
   
   return {
     session: { id, userId: sessionData.userId, expiresAt },
-    user: { id: userResult[0].id, email: userResult[0].email, username: userResult[0].username, githubId: userResult[0].githubId }
+    user: { id: userResult[0].id, email: userResult[0].email, username: userResult[0].username, githubId: userResult[0].githubId, name: userResult[0].name }
   };
 }
 

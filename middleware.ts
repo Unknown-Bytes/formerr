@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+	
 		const token = request.cookies.get("session")?.value;
 	if (request.nextUrl.pathname.startsWith("/v1")) {
 		if (!token) {
@@ -45,4 +46,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 		});
 	}
 	return NextResponse.next();
+	
 }

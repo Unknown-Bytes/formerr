@@ -9,6 +9,24 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'images.pexels.com'],
   },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['formerr.tech', 'localhost:3000'],
+    },
+  },
+  async headers() {
+    return [
+      {
+        source: '/_next/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: process.env.NODE_ENV === 'development' ? '*' : 'https://formerr.tech',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -13,7 +13,7 @@ export function MobileNav({ image }: MobileNavProps) {
       <button
         aria-label="Dashboard"
         className="p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-900 transition"
-        onClick={() => (window.location.href = '')}>
+        onClick={() => (window.location.href = '/v1/dashboard')}>
         <LayoutDashboard color="currentColor" className="text-black dark:text-gray-100" size={32} />
       </button>
 

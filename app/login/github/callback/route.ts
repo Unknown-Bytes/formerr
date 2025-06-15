@@ -18,15 +18,21 @@ export async function GET(request: Request): Promise<Response> {
 	const state = url.searchParams.get("state");
 	const storedState = (await cookies()).get("github_oauth_state")?.value ?? null;
 	console.log(code, state, url);
-	if (code === null || state === null || storedState === null) {
-		return new Response("Please restart the process.", {
-			status: 400
-		});
+	if (code === null || state === null) {
+	    // Limpando o cookie pra ele não dar problema na próxima
+	    (await cookies()).set("github_oauth_state", "" , { expires: new Date(0) });
+	    return new Response(JSON.stringify({ error: "Code or state is missing. The state may have expire. Please restart the process." }), {
+	        status: 400,
+	        headers: { "Content-Type": "application/json" }
+	    });
 	}
 	if (state !== storedState) {
-		return new Response("Please restart the process.", {
-			status: 400
-		});
+	    // Limpando o cookie pra ele não dar problema na próxima
+	    (await cookies()).set("github_oauth_state", "" , { expires: new Date(0) });
+	    return new Response(JSON.stringify({ error: "Invalid state. Your login may have timed out. Please restart the process." }), {
+	        status: 400,
+	        headers: { "Content-Type": "application/json" }
+	    });
 	}
 
 	let tokens: OAuth2Tokens;
@@ -34,9 +40,10 @@ export async function GET(request: Request): Promise<Response> {
 		tokens = await github.validateAuthorizationCode(code);
 	} catch {
 		// Invalid code or client credentials
-		return new Response("Please restart the process.", {
-			status: 400
-		});
+		return new Response(JSON.stringify({ error: "Invalid or expired authorization code. Please restart the process." }), {
+		        status: 400,
+		        headers: { "Content-Type": "application/json" }
+		    });
 	}
 	const githubAccessToken = tokens.accessToken();
 
@@ -48,6 +55,7 @@ export async function GET(request: Request): Promise<Response> {
 	console.log(userParser)
 	const githubUserId = userParser.getNumber("id");
 	const username = userParser.getString("login");
+	const name = userParser.getString("name");
 
 	const existingUser = await getUserFromGitHubId(githubUserId);
 	if (existingUser) {
@@ -81,12 +89,13 @@ export async function GET(request: Request): Promise<Response> {
 		}
 	}
 	if (email === null) {
-		return new Response("Please verify your GitHub email address.", {
-			status: 400
-		});
+		return new Response(JSON.stringify({ error: "Primary, verified email not found. Please make sure your GitHub account has a primary and verified email." }), {
+		        status: 400,
+		        headers: { "Content-Type": "application/json" }
+		    });
 	}
 
-	const user = await createUser(githubUserId, email, username);
+	const user = await createUser(githubUserId, email, username, name);
 	const sessionToken = generateSessionToken();
 	const session = await createSession(sessionToken, user.id);
 	setSessionIdCookie(session.id, session.expiresAt);
