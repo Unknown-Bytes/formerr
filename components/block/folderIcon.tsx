@@ -10,7 +10,7 @@ export function FolderIcon() {
                 </h2>
                 {/* Trapézio anexado */}
                 <div
-                    className="absolute right-[-19px] top-1/2 -translate-y-1/2 bg-[rgb(255,200,67)]"
+                    className="absolute right-[-19px] top-1/2 -translate-y-1/2 bg-[rgb(255,200,67)] shadow-[3px_0px_4px_rgba(0,0,0,0.25)]"
                     style={{ width: '30px', height: '100px', clipPath: 'polygon(0 0, 70% 20%, 70% 80%, 0 100%)' }}
                 />
             </div>

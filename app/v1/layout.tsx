@@ -22,9 +22,6 @@ export default async function DashboardLayout({ children }: PropsWithChildren<{}
       {/* Main content area with proper spacing for mobile nav */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar for Desktop and Tablet */}
-        <div className="hidden md:block lg:w-2/10 md:w-3/10 bg-black h-full overflow-y-auto">
-          {/* Sidebar content can go here */}
-        </div>
 
         {/* Main content area */}
         <div className="flex-1 overflow-y-auto md:pb-0">
