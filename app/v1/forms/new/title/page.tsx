@@ -5,6 +5,8 @@ import { useNewForm } from "../formcontext";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
 import {
   FileText,
   Users,
@@ -19,9 +21,22 @@ import {
   ArrowBigLeft
 } from "lucide-react";
 
+// Add id to the form type (you might want to add this to your FormContext type as well)
+interface FormWithId {
+  id?: string;
+  title: string;
+  description: string;
+  private: boolean;
+  maxResponses: number;
+  allowedEmails: string[];
+  sections: any[];
+  questions: any[];
+}
+
 export default function Forms() {
   const { newForm, setNewForm } = useNewForm();
   const [emailInput, setEmailInput] = React.useState("");
+  const router = useRouter();
 
   // Validações
   const isTitleValid = newForm?.title?.trim?.() !== '' && newForm?.title?.trim?.().length > 0;
@@ -43,8 +58,21 @@ export default function Forms() {
       }
       return;
     }
-    // Se tudo estiver válido, segue pra próxima
-    window.location.href = "/v1/forms/new/questions";
+
+    // Generate form ID if not already set and add timestamps
+    const formWithId = newForm as FormWithId;
+    if (!formWithId.id) {
+      const now = Date.now();
+      setNewForm(prev => ({
+        ...prev,
+        id: uuidv4(),
+        createdAt: now,
+        updatedAt: now
+      }));
+    }
+
+    // Use Next.js router for better performance
+    router.push("/v1/forms/new/questions");
   }
 
   const handleAddEmail = () => {
@@ -72,17 +100,23 @@ export default function Forms() {
     }
   };
 
+  const handleBackToDashboard = () => {
+    router.push("/v1/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/30">
       <div className="max-w-4xl mx-auto p-8">
         <div className="space-y-8">
           {/* Header Section */}
-          <Button className="w-fit h-8 bg-blue-100 rounded-lg flex items-center justify-center hover:bg-blue-200"
-          onClick={() => window.location.href = "/v1/dashboard"}
+          <Button 
+            className="w-fit h-8 bg-blue-100 rounded-lg flex items-center justify-center hover:bg-blue-200"
+            onClick={handleBackToDashboard}
           >
             <ArrowBigLeft className="w-4 h-4 text-blue-600" />
             <p className="text-blue-600">Voltar</p>
           </Button>
+          
           <div className="space-y-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">

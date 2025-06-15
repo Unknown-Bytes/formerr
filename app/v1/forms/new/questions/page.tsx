@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNewForm } from "../formcontext";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   Plus, 
@@ -21,7 +22,8 @@ import {
   CalendarClock,
   Star,
   FileText,
-  Settings
+  Settings,
+  ArrowBigLeft
 } from "lucide-react";
 import {
   Dialog,
@@ -48,6 +50,38 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+// Import types from context
+type Question = {
+  id: string;
+  title: string;
+  description: string;
+  type:
+    | "short-text"
+    | "paragraph"
+    | "multiple-choice-single"
+    | "multiple-choice-multiple"
+    | "dropdown"
+    | "date"
+    | "time"
+    | "datetime"
+    | "rating";
+  required: boolean;
+  order: number;
+  sectionId: string;
+  options?: { id: string; label: string }[];
+};
+
+type Section = {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  formId: string;
+  questions?: Question[];
+  createdAt?: number;
+  updatedAt?: number;
+};
 
 // Enhanced QuestionView component with Notion-style design
 const QuestionView = ({ question }: { question: Question }) => {
@@ -140,7 +174,7 @@ const SortableQuestionItem = ({
   question: Question;
   index: number;
   onEdit: (question: Question) => void;
-  onDelete: (index: number) => void;
+  onDelete: (questionId: string) => void;
 }) => {
   const {
     attributes,
@@ -209,7 +243,7 @@ const SortableQuestionItem = ({
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors"
-            onClick={() => onDelete(index)}
+            onClick={() => onDelete(question.id)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -386,65 +420,59 @@ const QUESTION_TYPES = [
   },
 ];
 
-type Section = {
-	id: string;
-	title: string;
-	description: string;
-	order: number;
-	questions?: Question[];
-	formId?: string;
-	createdAt?: number;
-	updatedAt?: number;
-};
-
-type Question = {
-	id: string;
-	title: string;
-	description: string;
-	type:
-		| "short-text"
-		| "paragraph"
-		| "multiple-choice-single"
-		| "multiple-choice-multiple"
-		| "dropdown"
-		| "date"
-		| "time"
-		| "datetime"
-		| "rating";
-	required: boolean;
-	order: number;
-	options?: { id: string; label: string }[];
-};
-
-const defaultSection: Section = {
-	id: "",
-	title: "",
-	description: "",
-	order: 0,
-	questions: [],
-	formId: "",
-	createdAt: Date.now(),
-	updatedAt: Date.now()
-};
-
-const createNewQuestion = (type: Question['type'] = 'short-text', order: number = 0): Question => ({
+const createNewQuestion = (type: Question['type'] = 'short-text', order: number = 0, sectionId: string): Question => ({
   id: uuidv4(),
   title: `Nova pergunta`,
   description: "",
   type,
   required: false,
   order,
+  sectionId,
   options: type === 'multiple-choice-single' || type === 'multiple-choice-multiple' || type === 'dropdown' || type === 'rating'
     ? [{ id: uuidv4(), label: 'Opção 1' }]
     : undefined
 });
 
 export default function Questions() {
-  const { newForm, setNewForm } = useNewForm();
-  const [newSection, setNewSection] = useState<Section>({ ...defaultSection });
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const { 
+    newForm, 
+    setNewForm, 
+    addQuestion, 
+    addSection, 
+    updateQuestion, 
+    deleteQuestion, 
+    getQuestionById,
+    getSectionById 
+  } = useNewForm();
+  
+  const router = useRouter();
+  const [currentSection, setCurrentSection] = useState<Section | null>(null);
+  const [sectionTitle, setSectionTitle] = useState('');
+  const [sectionDescription, setSectionDescription] = useState('');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Initialize current section
+  useEffect(() => {
+    if (!currentSection) {
+      const newSectionId = uuidv4();
+      const section: Section = {
+        id: newSectionId,
+        title: '',
+        description: '',
+        order: newForm.sections.length,
+        formId: (newForm as any).id || uuidv4(),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      setCurrentSection(section);
+    }
+  }, [currentSection, newForm.sections.length]);
+
+  // Get questions for current section
+  const sectionQuestions = currentSection ? 
+    newForm.questions.filter(q => q.sectionId === currentSection.id).sort((a, b) => a.order - b.order) : 
+    [];
 
   // Set up sensors for drag and drop
   const sensors = useSensors(
@@ -459,23 +487,34 @@ export default function Questions() {
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      setQuestions((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over?.id);
-        
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        
-        return newItems.map((item, index) => ({
-          ...item,
-          order: index
-        }));
+      const oldIndex = sectionQuestions.findIndex((item) => item.id === active.id);
+      const newIndex = sectionQuestions.findIndex((item) => item.id === over?.id);
+      
+      const reorderedQuestions = arrayMove(sectionQuestions, oldIndex, newIndex);
+      
+      // Update the order for all questions in this section
+      reorderedQuestions.forEach((question, index) => {
+        updateQuestion(question.id, { order: index });
       });
     }
   };
 
   const handleAddQuestion = (type: Question['type']) => {
-    const newQuestion = createNewQuestion(type, questions.length);
-    setQuestions([...questions, newQuestion]);
+    if (!currentSection) return;
+    
+    const questionData = {
+      title: `Nova pergunta`,
+      description: '',
+      type,
+      required: false,
+      order: sectionQuestions.length,
+      sectionId: currentSection.id,
+      options: type === 'multiple-choice-single' || type === 'multiple-choice-multiple' || type === 'dropdown' || type === 'rating'
+        ? [{ id: uuidv4(), label: 'Opção 1' }]
+        : undefined
+    };
+    
+    addQuestion(questionData);
   };
 
   const handleEditQuestion = (question: Question) => {
@@ -483,23 +522,69 @@ export default function Questions() {
     setIsEditing(true);
   };
 
-  const handleDeleteQuestion = (index: number) => {
-    const updatedQuestions = questions.filter((_, i) => i !== index);
-    const reorderedQuestions = updatedQuestions.map((question, i) => ({
-      ...question,
-      order: i
-    }));
-    setQuestions(reorderedQuestions);
+  const handleDeleteQuestion = (questionId: string) => {
+    deleteQuestion(questionId);
   };
 
-	return (
-		<div className="min-h-screen bg-gray-50/30">
+  const handleSaveSection = () => {
+    if (!currentSection || !sectionTitle.trim()) return;
+
+    const sectionData = {
+      ...currentSection,
+      title: sectionTitle,
+      description: sectionDescription,
+      updatedAt: Date.now()
+    };
+
+    // Add section to form
+    addSection(sectionData);
+    
+    // Create new section for next step
+    const newSectionId = uuidv4();
+    const nextSection: Section = {
+      id: newSectionId,
+      title: '',
+      description: '',
+      order: newForm.sections.length + 1,
+      formId: sectionData.formId,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    setCurrentSection(nextSection);
+    setSectionTitle('');
+    setSectionDescription('');
+  };
+
+  const handlePublishForm = () => {
+    if (currentSection && sectionTitle.trim()) {
+      handleSaveSection();
+    }
+    
+    // Navigate to publish/preview page
+    router.push("/v1/forms/new/publish");
+  };
+
+  const handleGoBack = () => {
+    router.push("/v1/forms/new/title");
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50/30">
       <div className="max-w-7xl mx-auto flex">
         {/* Main Content Area */}
         <div className="flex-1 p-8 max-w-4xl">
           <div className="space-y-8">
             {/* Header Section */}
             <div className="space-y-6">
+              <Button 
+                className="w-fit h-8 bg-blue-100 rounded-lg flex items-center justify-center hover:bg-blue-200"
+                onClick={handleGoBack}
+              >
+                <ArrowBigLeft className="w-4 h-4 text-blue-600" />
+                <p className="text-blue-600">Voltar</p>
+              </Button>
+
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
                   Criar Seção
@@ -530,10 +615,8 @@ export default function Questions() {
                       name="title"
                       placeholder="Ex: Informações pessoais"
                       className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      value={newSection?.title || ""}
-                      onChange={(e) => {
-                        setNewSection({ ...newSection, title: e.target.value });
-                      }}
+                      value={sectionTitle}
+                      onChange={(e) => setSectionTitle(e.target.value)}
                     />
                   </div>
                   
@@ -546,10 +629,8 @@ export default function Questions() {
                       name="description"
                       placeholder="Adicione uma descrição para orientar os respondentes"
                       className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      value={newSection?.description || ""}
-                      onChange={(e) => {
-                        setNewSection({ ...newSection, description: e.target.value });
-                      }}
+                      value={sectionDescription}
+                      onChange={(e) => setSectionDescription(e.target.value)}
                     />
                   </div>
                 </div>
@@ -568,14 +649,14 @@ export default function Questions() {
                       Perguntas da Seção
                     </h2>
                     <p className="text-sm text-gray-600 mt-0.5">
-                      {questions.length} pergunta{questions.length !== 1 ? 's' : ''} adicionada{questions.length !== 1 ? 's' : ''}
+                      {sectionQuestions.length} pergunta{sectionQuestions.length !== 1 ? 's' : ''} adicionada{sectionQuestions.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                 </div>
               </div>
               
               <div className="space-y-4">
-                {questions.length === 0 ? (
+                {sectionQuestions.length === 0 ? (
                   <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Plus className="w-8 h-8 text-gray-400" />
@@ -598,11 +679,11 @@ export default function Questions() {
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext 
-                      items={questions.map(q => q.id)}
+                      items={sectionQuestions.map(q => q.id)}
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="space-y-3">
-                        {questions.map((question, index) => (
+                        {sectionQuestions.map((question, index) => (
                           <SortableQuestionItem
                             key={question.id}
                             question={question}
@@ -620,34 +701,39 @@ export default function Questions() {
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-4">
-                <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <div className="flex gap-3 pt-6 border-t border-gray-200">
+                <Button
+                  className="flex-1 h-12 text-base font-medium"
+                  variant="outline"
+                  onClick={handleGoBack}
+                >
+                  Voltar
+                </Button>
+                <Button
+                  className="flex-1 h-12 text-base font-medium bg-yellow-500 hover:bg-yellow-600"
+                  onClick={handleSaveSection}
+                  disabled={!sectionTitle.trim()}
+                >
+                  Próxima Seção
+                </Button>
+              </div>
               <Button
-                className="flex-1 h-12 text-base font-medium"
-                variant="outline"
-                onClick={() => {
-                  // Lógica para adicionar a seção
-                }}
-              >
-                Voltar
-              </Button>
-              <Button
-                className="flex-1 h-12 text-base font-medium bg-yellow-500 hover:bg-yellow-600"
-                onClick={() => {
-                  // Lógica para publicar
-                }}
-              >
-                Proxíma Seção
-              </Button>
-            </div>
-            <Button
                 className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  // Lógica para publicar
-                }}
+                onClick={handlePublishForm}
               >
                 Publicar Formulário
               </Button>
             </div>
+
+            {/* Progress indicator */}
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <div className="w-8 h-2 bg-blue-600 rounded-full"></div>
+              <div className="w-8 h-2 bg-blue-600 rounded-full"></div>
+              <div className="w-8 h-2 bg-gray-200 rounded-full"></div>
+            </div>
+            <p className="text-center text-sm text-gray-500">
+              Passo 2 de 3 - Perguntas e seções
+            </p>
           </div>
         </div>
         
@@ -762,10 +848,7 @@ export default function Questions() {
                     <Button
                       onClick={() => {
                         if (editingQuestion) {
-                          const updatedQuestions = questions.map(q => 
-                            q.id === editingQuestion.id ? editingQuestion : q
-                          );
-                          setQuestions(updatedQuestions);
+                          updateQuestion(editingQuestion.id, editingQuestion);
                           setIsEditing(false);
                         }
                       }}
@@ -871,5 +954,5 @@ export default function Questions() {
         </div>
       </div>
     </div>
-	);
+  );
 }

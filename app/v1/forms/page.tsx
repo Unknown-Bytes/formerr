@@ -227,7 +227,7 @@ export default function Forms() {
             <Button 
               size="lg" 
               className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-              onClick={() => window.location.href = "/v1/forms/new"}
+              onClick={() => window.location.href = "/v1/forms/new/title"}
             >
               <Plus className="w-5 h-5 mr-2" />
               Criar Formulário
