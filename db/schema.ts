@@ -1,4 +1,4 @@
-import { pgTable, uuid, integer, text, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, integer, text, uniqueIndex, primaryKey, jsonb } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   id: uuid('id').defaultRandom().primaryKey(), // PK como UUID gerado automaticamente
@@ -14,15 +14,22 @@ export const user = pgTable('user', {
 });
 
 export const form = pgTable('form', {
-  id: uuid('id').defaultRandom().primaryKey(), // PK como UUID
+  id: uuid('id').defaultRandom().primaryKey(),
   ownerId: uuid('owner_id').notNull().references(() => user.id),
-  title: text('title').notNull(), 
+  title: text('title').notNull(),
   description: text('description'),
-  isPublic: integer('is_public').default(1), 
-  expireAt: integer('expire_at'), 
+  isPublic: integer('is_public').default(1),
+  status: text('status').notNull().default('draft'), // draft, active, paused, archived
+  expireAt: integer('expire_at'),
   allowAnonymous: integer('allow_anonymous').default(1),
   customThankYou: text('custom_thank_you'),
   customConfirmationPage: text('custom_confirmation_page'),
+  redirectUrl: text('redirect_url'),
+  passwordProtected: integer('password_protected').default(0),
+  formPassword: text('form_password'),
+  emailNotifications: integer('email_notifications').default(1),
+  webhookUrl: text('webhook_url'),
+  publishedAt: integer('published_at'),
   createdAt: integer('created_at').default(Math.floor(Date.now() / 1000)),
   updatedAt: integer('updated_at').default(Math.floor(Date.now() / 1000))
 });
@@ -70,4 +77,13 @@ export const option = pgTable('option', {
   id: uuid('id').defaultRandom().primaryKey(), 
   questionId: uuid('question_id').notNull().references(() => question.id),
   label: text('label').notNull()
+});
+
+// Analytics table for form events
+export const formAnalytics = pgTable('form_analytics', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  formId: uuid('form_id').notNull().references(() => form.id, { onDelete: 'cascade' }),
+  eventType: text('event_type').notNull(), // view, share, submit, etc.
+  eventData: jsonb('event_data'), // JSON data specific to the event
+  timestamp: integer('timestamp').notNull().default(Math.floor(Date.now() / 1000))
 });
