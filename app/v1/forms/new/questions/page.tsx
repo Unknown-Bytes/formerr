@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from "sonner";
 import { 
   Plus, 
   Trash2, 
@@ -23,7 +24,10 @@ import {
   Star,
   FileText,
   Settings,
-  ArrowBigLeft
+  ArrowBigLeft,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import {
   Dialog,
@@ -83,7 +87,7 @@ type Section = {
   updatedAt?: number;
 };
 
-// Enhanced QuestionView component with Notion-style design
+// Enhanced QuestionView component
 const QuestionView = ({ question }: { question: Question }) => {
   return (
     <div className="space-y-3">
@@ -164,7 +168,7 @@ const QuestionView = ({ question }: { question: Question }) => {
   );
 };
 
-// Enhanced Sortable Question Item with Notion-style interactions
+// Enhanced Sortable Question Item
 const SortableQuestionItem = ({ 
   question, 
   index, 
@@ -199,7 +203,6 @@ const SortableQuestionItem = ({
       }`}
     >
       <div className="flex items-start gap-3 p-4">
-        {/* Enhanced drag handle */}
         <div
           {...attributes}
           {...listeners}
@@ -210,11 +213,9 @@ const SortableQuestionItem = ({
           <GripVertical className="h-4 w-4 text-gray-400" />
         </div>
         
-        {/* Question content */}
         <div className="flex-1 min-w-0">
           <QuestionView question={question} />
           
-          {/* Question metadata */}
           <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
             <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-full">
               {getQuestionTypeIcon(question.type)}
@@ -227,7 +228,6 @@ const SortableQuestionItem = ({
           </div>
         </div>
         
-        {/* Enhanced action buttons */}
         <div className={`flex-shrink-0 flex items-center gap-1 transition-all duration-200 ${
           isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         }`}>
@@ -253,7 +253,7 @@ const SortableQuestionItem = ({
   );
 };
 
-// Helper functions for question type icons and labels
+// Helper functions
 const getQuestionTypeIcon = (type: Question['type']) => {
   const iconMap = {
     'short-text': <Type className="w-3 h-3" />,
@@ -284,7 +284,7 @@ const getQuestionTypeLabel = (type: Question['type']) => {
   return labelMap[type];
 };
 
-// Enhanced Question Types with better icons and descriptions
+// Enhanced Question Types with PREVIEWS RESTORED
 const QUESTION_TYPES = [
   { 
     id: 'short-text', 
@@ -420,61 +420,56 @@ const QUESTION_TYPES = [
   },
 ];
 
-const createNewQuestion = (type: Question['type'] = 'short-text', order: number = 0, sectionId: string): Question => ({
-  id: uuidv4(),
-  title: `Nova pergunta`,
-  description: "",
-  type,
-  required: false,
-  order,
-  sectionId,
-  options: type === 'multiple-choice-single' || type === 'multiple-choice-multiple' || type === 'dropdown' || type === 'rating'
-    ? [{ id: uuidv4(), label: 'Opção 1' }]
-    : undefined
-});
-
 export default function Questions() {
   const { 
     newForm, 
-    setNewForm, 
     addQuestion, 
     addSection, 
     updateQuestion, 
+    updateSection,
     deleteQuestion, 
-    getQuestionById,
-    getSectionById 
+    isLoading: contextLoading
   } = useNewForm();
   
   const router = useRouter();
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Initialize current section
+  const sortedSections = newForm.sections.sort((a, b) => a.order - b.order);
+
   useEffect(() => {
-    if (!currentSection) {
+    if (sortedSections.length > 0) {
+      const section = sortedSections[currentSectionIndex];
+      if (section) {
+        setCurrentSection(section);
+        setSectionTitle(section.title);
+        setSectionDescription(section.description);
+      }
+    } else {
       const newSectionId = uuidv4();
       const section: Section = {
         id: newSectionId,
         title: '',
         description: '',
-        order: newForm.sections.length,
+        order: 0,
         formId: (newForm as any).id || uuidv4(),
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
       setCurrentSection(section);
+      setSectionTitle('');
+      setSectionDescription('');
     }
-  }, [currentSection, newForm.sections.length]);
+  }, [currentSectionIndex, sortedSections.length]);
 
-  // Get questions for current section
   const sectionQuestions = currentSection ? 
     newForm.questions.filter(q => q.sectionId === currentSection.id).sort((a, b) => a.order - b.order) : 
     [];
 
-  // Set up sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -482,7 +477,6 @@ export default function Questions() {
     })
   );
 
-  // Handle drag end event
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -492,15 +486,18 @@ export default function Questions() {
       
       const reorderedQuestions = arrayMove(sectionQuestions, oldIndex, newIndex);
       
-      // Update the order for all questions in this section
       reorderedQuestions.forEach((question, index) => {
         updateQuestion(question.id, { order: index });
       });
     }
   };
 
+  // ✅ REMOVIDO ASYNC - função agora é síncrona
   const handleAddQuestion = (type: Question['type']) => {
     if (!currentSection) return;
+    
+    // Primeiro salva a seção atual
+    saveCurrentSection();
     
     const questionData = {
       title: `Nova pergunta`,
@@ -515,6 +512,7 @@ export default function Questions() {
     };
     
     addQuestion(questionData);
+    toast.success('Pergunta adicionada!');
   };
 
   const handleEditQuestion = (question: Question) => {
@@ -522,52 +520,99 @@ export default function Questions() {
     setIsEditing(true);
   };
 
+  // ✅ REMOVIDO ASYNC - função agora é síncrona
   const handleDeleteQuestion = (questionId: string) => {
     deleteQuestion(questionId);
+    toast.success('Pergunta removida');
   };
 
-  const handleSaveSection = () => {
+  // ✅ REMOVIDO ASYNC - função agora é síncrona
+  const saveCurrentSection = () => {
     if (!currentSection || !sectionTitle.trim()) return;
 
     const sectionData = {
-      ...currentSection,
       title: sectionTitle,
       description: sectionDescription,
+      order: currentSection.order,
+      formId: currentSection.formId,
       updatedAt: Date.now()
     };
 
-    // Add section to form
-    addSection(sectionData);
-    
-    // Create new section for next step
-    const newSectionId = uuidv4();
-    const nextSection: Section = {
-      id: newSectionId,
-      title: '',
-      description: '',
-      order: newForm.sections.length + 1,
-      formId: sectionData.formId,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    
-    setCurrentSection(nextSection);
-    setSectionTitle('');
-    setSectionDescription('');
+    if (sortedSections.find(s => s.id === currentSection.id)) {
+      updateSection(currentSection.id, sectionData);
+    } else {
+      addSection({ ...currentSection, ...sectionData });
+    }
   };
 
+  // ✅ REMOVIDO ASYNC - função agora é síncrona
+  const handleGoToPreviousSection = () => {
+    if (currentSectionIndex > 0) {
+      saveCurrentSection();
+      setCurrentSectionIndex(currentSectionIndex - 1);
+    } else {
+      router.push("/v1/forms/new/title");
+    }
+  };
+
+  // ✅ REMOVIDO ASYNC - função agora é síncrona
+  const handleGoToNextSection = () => {
+    saveCurrentSection();
+    
+    if (currentSectionIndex < sortedSections.length - 1) {
+      setCurrentSectionIndex(currentSectionIndex + 1);
+    } else {
+      const newSectionId = uuidv4();
+      const nextSection: Section = {
+        id: newSectionId,
+        title: '',
+        description: '',
+        order: sortedSections.length,
+        formId: currentSection?.formId || (newForm as any).id || uuidv4(),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      
+      setCurrentSection(nextSection);
+      setSectionTitle('');
+      setSectionDescription('');
+      setCurrentSectionIndex(sortedSections.length);
+    }
+  };
+
+  // ✅ REMOVIDO ASYNC - função agora é síncrona
   const handlePublishForm = () => {
     if (currentSection && sectionTitle.trim()) {
-      handleSaveSection();
+      saveCurrentSection();
     }
     
-    // Navigate to publish/preview page
     router.push("/v1/forms/new/publish");
   };
 
-  const handleGoBack = () => {
-    router.push("/v1/forms/new/title");
+  const getBackButtonConfig = () => {
+    if (currentSectionIndex === 0 && sortedSections.length === 0) {
+      return {
+        text: "Voltar ao Formulário",
+        action: () => router.push("/v1/forms/new/title"),
+        icon: ArrowBigLeft
+      };
+    } else if (currentSectionIndex === 0) {
+      return {
+        text: "Voltar ao Formulário", 
+        action: () => router.push("/v1/forms/new/title"),
+        icon: ArrowBigLeft
+      };
+    } else {
+      return {
+        text: "Seção Anterior",
+        action: handleGoToPreviousSection,
+        icon: ChevronLeft
+      };
+    }
   };
+
+  const backButtonConfig = getBackButtonConfig();
+  const BackIcon = backButtonConfig.icon;
 
   return (
     <div className="min-h-screen bg-gray-50/30">
@@ -579,19 +624,54 @@ export default function Questions() {
             <div className="space-y-6">
               <Button 
                 className="w-fit h-8 bg-blue-100 rounded-lg flex items-center justify-center hover:bg-blue-200"
-                onClick={handleGoBack}
+                onClick={backButtonConfig.action}
+                disabled={contextLoading}
               >
-                <ArrowBigLeft className="w-4 h-4 text-blue-600" />
-                <p className="text-blue-600">Voltar</p>
+                <BackIcon className="w-4 h-4 text-blue-600" />
+                <p className="text-blue-600">{backButtonConfig.text}</p>
               </Button>
 
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                  Criar Seção
-                </h1>
-                <p className="text-lg text-gray-600 mt-2">
-                  Configure uma nova seção com perguntas personalizadas
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                    {currentSectionIndex < sortedSections.length ? 'Editar Seção' : 'Criar Seção'}
+                  </h1>
+                  <p className="text-lg text-gray-600 mt-2">
+                    {currentSectionIndex < sortedSections.length 
+                      ? `Editando seção ${currentSectionIndex + 1} de ${sortedSections.length}`
+                      : `Criando seção ${sortedSections.length + 1}`
+                    }
+                  </p>
+                </div>
+                
+                {/* Navigation between sections */}
+                {sortedSections.length > 1 && (
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGoToPreviousSection}
+                      disabled={currentSectionIndex === 0 || contextLoading}
+                      className="h-9"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Anterior
+                    </Button>
+                    <div className="text-sm text-gray-500 px-3">
+                      {currentSectionIndex + 1} / {sortedSections.length + (currentSectionIndex >= sortedSections.length ? 1 : 0)}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGoToNextSection}
+                      className="h-9"
+                      disabled={contextLoading}
+                    >
+                      Próxima
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Section Configuration */}
@@ -617,6 +697,7 @@ export default function Questions() {
                       className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       value={sectionTitle}
                       onChange={(e) => setSectionTitle(e.target.value)}
+                      disabled={contextLoading}
                     />
                   </div>
                   
@@ -631,6 +712,7 @@ export default function Questions() {
                       className="h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       value={sectionDescription}
                       onChange={(e) => setSectionDescription(e.target.value)}
+                      disabled={contextLoading}
                     />
                   </div>
                 </div>
@@ -705,23 +787,34 @@ export default function Questions() {
                 <Button
                   className="flex-1 h-12 text-base font-medium"
                   variant="outline"
-                  onClick={handleGoBack}
+                  onClick={backButtonConfig.action}
+                  disabled={contextLoading}
                 >
-                  Voltar
+                  <BackIcon className="w-4 h-4 mr-2" />
+                  {backButtonConfig.text}
                 </Button>
                 <Button
                   className="flex-1 h-12 text-base font-medium bg-yellow-500 hover:bg-yellow-600"
-                  onClick={handleSaveSection}
-                  disabled={!sectionTitle.trim()}
+                  onClick={handleGoToNextSection}
+                  disabled={!sectionTitle.trim() || contextLoading}
                 >
+                  <ChevronRight className="w-4 h-4 mr-2" />
                   Próxima Seção
                 </Button>
               </div>
               <Button
                 className="flex-1 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700"
                 onClick={handlePublishForm}
+                disabled={contextLoading}
               >
-                Publicar Formulário
+                {contextLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Preparando...
+                  </>
+                ) : (
+                  'Publicar Formulário'
+                )}
               </Button>
             </div>
 
@@ -737,7 +830,7 @@ export default function Questions() {
           </div>
         </div>
         
-        {/* Enhanced Question Editor Modal */}
+        {/* Question Editor Modal */}
         <Dialog open={isEditing} onOpenChange={setIsEditing}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-6 border-b border-gray-200">
@@ -850,6 +943,7 @@ export default function Questions() {
                         if (editingQuestion) {
                           updateQuestion(editingQuestion.id, editingQuestion);
                           setIsEditing(false);
+                          toast.success('Pergunta atualizada!');
                         }
                       }}
                       className="h-10 bg-blue-600 hover:bg-blue-700"
@@ -863,8 +957,8 @@ export default function Questions() {
           </DialogContent>
         </Dialog>
         
-        {/* Enhanced Sidebar */}
-        <div className="w-80 bg-white border-l border-gray-200 h-screen overflow-y-auto sticky top-0">
+        {/* SIDEBAR com previews */}
+        <div className="w-96 bg-white border-l border-gray-200 h-screen overflow-y-auto sticky top-0">
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
@@ -881,8 +975,16 @@ export default function Questions() {
                 return (
                   <div 
                     key={type.id}
-                    className="group border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                    onClick={() => handleAddQuestion(type.id as Question['type'])}
+                    className={`group border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer transition-all duration-200 hover:shadow-sm ${
+                      !sectionTitle.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    onClick={() => {
+                      if (sectionTitle.trim()) {
+                        handleAddQuestion(type.id as Question['type']);
+                      } else {
+                        toast.warning('Adicione um nome à seção antes de criar perguntas');
+                      }
+                    }}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-${type.color}-100 group-hover:bg-${type.color}-200 transition-colors`}>
@@ -896,7 +998,7 @@ export default function Questions() {
                           {type.description}
                         </p>
                         
-                        {/* Preview */}
+                        {/* PREVIEW RESTAURADO */}
                         <div className="mt-3 p-3 bg-gray-50 rounded-md border">
                           <div className="text-xs font-medium text-gray-700 mb-2">
                             {type.preview.title}

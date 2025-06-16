@@ -2,7 +2,7 @@ import { getCurrentSession } from "@/lib/server/session";
 import { redirect } from "next/navigation";
 import { globalGETRateLimit } from "@/lib/server/request";
 import { MobileNav } from "@/components/block/MobileNav";
-
+import { Toaster } from 'sonner'
 import { PropsWithChildren } from "react";
 
 export default async function DashboardLayout({ children }: PropsWithChildren<{}>) {
@@ -28,6 +28,8 @@ export default async function DashboardLayout({ children }: PropsWithChildren<{}
       <div className="flex-1 overflow-y-auto md:pb-0">
           {children}
       </div>
+      <Toaster position="top-right" />
     </div>
+    
   )
 }
